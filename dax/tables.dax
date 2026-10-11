@@ -1,0 +1,111 @@
+// =====================================================================
+//  Battleship in Power BI - Level 1 (100% DAX + SVG)
+//  Calculated tables. In Power BI Desktop: Modeling > New table,
+//  paste ONE table definition at a time (name = expression).
+//  No relationships are needed: all tables stay disconnected.
+// =====================================================================
+
+
+// ---------------------------------------------------------------------
+// 1) Grid : the 10 x 10 board (100 rows). Used to draw the SVG.
+// ---------------------------------------------------------------------
+Grid =
+VAR _rows =
+    DATATABLE (
+        "RowIdx", INTEGER,
+        "RowLabel", STRING,
+        {
+            { 1, "A" }, { 2, "B" }, { 3, "C" }, { 4, "D" }, { 5, "E" },
+            { 6, "F" }, { 7, "G" }, { 8, "H" }, { 9, "I" }, { 10, "J" }
+        }
+    )
+VAR _cols =
+    SELECTCOLUMNS ( GENERATESERIES ( 1, 10, 1 ), "Col", [Value] )
+RETURN
+    ADDCOLUMNS (
+        CROSSJOIN ( _rows, _cols ),
+        "Cell", [RowLabel] & [Col],
+        "CellOrder", [RowIdx] * 100 + [Col]
+    )
+
+
+// ---------------------------------------------------------------------
+// 2) Shots : disconnected copy of the grid. The player's slicer.
+//    Every selected cell = one shot fired.
+//    Set Shots[Cell] > Sort by column > Shots[CellOrder]
+// ---------------------------------------------------------------------
+Shots =
+SELECTCOLUMNS (
+    Grid,
+    "Cell", Grid[Cell],
+    "CellOrder", Grid[CellOrder],
+    "RowLabel", Grid[RowLabel],
+    "Col", Grid[Col]
+)
+
+
+// ---------------------------------------------------------------------
+// 3) Ships : 3 hidden fleets (Game 1..3), 17 cells each.
+//    Carrier 5, Battleship 4, Cruiser 3, Submarine 3, Destroyer 2.
+//    Ships never touch each other (classic rules).
+// ---------------------------------------------------------------------
+Ships =
+DATATABLE (
+    "Game", STRING,
+    "ShipName", STRING,
+    "Size", INTEGER,
+    "Cell", STRING,
+    {
+        { "Game 1", "Carrier", 5, "D8" },
+        { "Game 1", "Carrier", 5, "E8" },
+        { "Game 1", "Carrier", 5, "F8" },
+        { "Game 1", "Carrier", 5, "G8" },
+        { "Game 1", "Carrier", 5, "H8" },
+        { "Game 1", "Battleship", 4, "G5" },
+        { "Game 1", "Battleship", 4, "H5" },
+        { "Game 1", "Battleship", 4, "I5" },
+        { "Game 1", "Battleship", 4, "J5" },
+        { "Game 1", "Cruiser", 3, "C1" },
+        { "Game 1", "Cruiser", 3, "D1" },
+        { "Game 1", "Cruiser", 3, "E1" },
+        { "Game 1", "Submarine", 3, "A10" },
+        { "Game 1", "Submarine", 3, "B10" },
+        { "Game 1", "Submarine", 3, "C10" },
+        { "Game 1", "Destroyer", 2, "C4" },
+        { "Game 1", "Destroyer", 2, "C5" },
+        { "Game 2", "Carrier", 5, "C6" },
+        { "Game 2", "Carrier", 5, "D6" },
+        { "Game 2", "Carrier", 5, "E6" },
+        { "Game 2", "Carrier", 5, "F6" },
+        { "Game 2", "Carrier", 5, "G6" },
+        { "Game 2", "Battleship", 4, "I6" },
+        { "Game 2", "Battleship", 4, "I7" },
+        { "Game 2", "Battleship", 4, "I8" },
+        { "Game 2", "Battleship", 4, "I9" },
+        { "Game 2", "Cruiser", 3, "A4" },
+        { "Game 2", "Cruiser", 3, "A5" },
+        { "Game 2", "Cruiser", 3, "A6" },
+        { "Game 2", "Submarine", 3, "I1" },
+        { "Game 2", "Submarine", 3, "I2" },
+        { "Game 2", "Submarine", 3, "I3" },
+        { "Game 2", "Destroyer", 2, "D3" },
+        { "Game 2", "Destroyer", 2, "D4" },
+        { "Game 3", "Carrier", 5, "E3" },
+        { "Game 3", "Carrier", 5, "F3" },
+        { "Game 3", "Carrier", 5, "G3" },
+        { "Game 3", "Carrier", 5, "H3" },
+        { "Game 3", "Carrier", 5, "I3" },
+        { "Game 3", "Battleship", 4, "C2" },
+        { "Game 3", "Battleship", 4, "C3" },
+        { "Game 3", "Battleship", 4, "C4" },
+        { "Game 3", "Battleship", 4, "C5" },
+        { "Game 3", "Cruiser", 3, "E1" },
+        { "Game 3", "Cruiser", 3, "F1" },
+        { "Game 3", "Cruiser", 3, "G1" },
+        { "Game 3", "Submarine", 3, "H8" },
+        { "Game 3", "Submarine", 3, "I8" },
+        { "Game 3", "Submarine", 3, "J8" },
+        { "Game 3", "Destroyer", 2, "E10" },
+        { "Game 3", "Destroyer", 2, "F10" }
+    }
+)

@@ -1,0 +1,10 @@
+# Power BI project (PBIP) local files
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+*.tmp

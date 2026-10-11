@@ -1,0 +1,234 @@
+// =====================================================================
+//  Battleship in Power BI - Level 1 (100% DAX + SVG)
+//  Measures. Create them in a dedicated "_Measures" table
+//  (Home > Enter data > name it _Measures > Load), then
+//  Modeling > New measure for each block below.
+//
+//  Core idea
+//  ---------
+//  * The Shots slicer (multi-select) holds the game state:
+//    every selected cell is a shot fired.
+//  * The Game slicer (single-select) picks the hidden fleet.
+//  * Set operations (INTERSECT / EXCEPT) compare shots and ships.
+//  * CONCATENATEX builds an SVG image string, rendered by Power BI
+//    because the measure's Data category is "Image URL".
+// =====================================================================
+
+
+// ---------------------------------------------------------------------
+// Shots Fired : number of cells selected in the Shots slicer.
+// When the slicer is empty, nothing is filtered -> 0 shots (not 100).
+// ---------------------------------------------------------------------
+Shots Fired =
+IF ( ISFILTERED ( Shots[Cell] ), COUNTROWS ( VALUES ( Shots[Cell] ) ), 0 )
+
+
+// ---------------------------------------------------------------------
+// Hits : shots that landed on a ship cell of the selected game.
+// ---------------------------------------------------------------------
+Hits =
+VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+VAR _shipCells = VALUES ( Ships[Cell] )
+RETURN
+    COUNTROWS ( INTERSECT ( _shots, _shipCells ) ) + 0
+
+
+// ---------------------------------------------------------------------
+// Misses
+// ---------------------------------------------------------------------
+Misses =
+[Shots Fired] - [Hits]
+
+
+// ---------------------------------------------------------------------
+// Accuracy % (format as percentage)
+// ---------------------------------------------------------------------
+Accuracy % =
+DIVIDE ( [Hits], [Shots Fired] )
+
+
+// ---------------------------------------------------------------------
+// Ships Sunk : a ship is sunk when none of its cells is left un-shot.
+// FILTER iterates ship names; CALCULATETABLE triggers a context
+// transition to get the cells of the current ship only.
+// ---------------------------------------------------------------------
+Ships Sunk =
+VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+VAR _sunk =
+    FILTER (
+        VALUES ( Ships[ShipName] ),
+        ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) )
+    )
+RETURN
+    COUNTROWS ( _sunk ) + 0
+
+
+// ---------------------------------------------------------------------
+// Ships Remaining
+// ---------------------------------------------------------------------
+Ships Remaining =
+DISTINCTCOUNT ( Ships[ShipName] ) - [Ships Sunk]
+
+
+// ---------------------------------------------------------------------
+// Score : +100 per hit, +250 per ship sunk, -10 per miss,
+//         + victory bonus that rewards finishing in few shots.
+// ---------------------------------------------------------------------
+Score =
+VAR _victory = [Ships Remaining] = 0 && [Shots Fired] > 0
+VAR _bonus = IF ( _victory, MAX ( 0, 100 - [Shots Fired] ) * 20, 0 )
+RETURN
+    [Hits] * 100 + [Ships Sunk] * 250 - [Misses] * 10 + _bonus
+
+
+// ---------------------------------------------------------------------
+// Game Status : one-line message for a card visual.
+// ---------------------------------------------------------------------
+Game Status =
+SWITCH (
+    TRUE (),
+    NOT HASONEVALUE ( Ships[Game] ), "Pick ONE game in the Game slicer.",
+    [Shots Fired] = 0, "Fire at will, Commander! Click cells to shoot.",
+    [Ships Remaining] = 0,
+        "VICTORY! Enemy fleet destroyed in " & [Shots Fired] & " shots.",
+    [Ships Sunk] & " / 5 ships sunk  |  " & [Hits] & " hits, "
+        & [Misses] & " misses"
+)
+
+
+// ---------------------------------------------------------------------
+// Board SVG : the 10 x 10 board drawn as an SVG image.
+// Data category = Image URL. Show it in a Table visual (one column)
+// or in an Image visual with a dynamic URL (fx).
+//
+// Cell colors
+//   deep blue  = water, not shot yet
+//   light blue = miss (white dot)
+//   red        = hit (white X)
+//   dark red   = cell of a sunk ship
+//   slate      = ship revealed at the end of the game
+// '#' must be URL-encoded as %23 inside a data URI.
+// ---------------------------------------------------------------------
+Board SVG =
+VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+VAR _shipCells = VALUES ( Ships[Cell] )
+VAR _sunkShips =
+    FILTER (
+        VALUES ( Ships[ShipName] ),
+        ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) )
+    )
+VAR _sunkCells =
+    CALCULATETABLE ( VALUES ( Ships[Cell] ), TREATAS ( _sunkShips, Ships[ShipName] ) )
+VAR _victory = ISEMPTY ( EXCEPT ( _shipCells, _shots ) ) && _isFiltered
+VAR _size = 40          // cell size in px
+VAR _margin = 36        // room for the row / column labels
+VAR _side = _margin + 10 * _size + 8
+VAR _header =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='" & _side & "' height='" & _side
+        & "' viewBox='0 0 " & _side & " " & _side & "'>"
+        & "<rect width='" & _side & "' height='" & _side & "' rx='10' fill='%230F172A'/>"
+VAR _colLabels =
+    CONCATENATEX (
+        GENERATESERIES ( 1, 10, 1 ),
+        "<text x='" & _margin + ( [Value] - 1 ) * _size + _size / 2
+            & "' y='24' font-family='Segoe UI,Arial' font-size='14' font-weight='600'"
+            & " text-anchor='middle' fill='%2394A3B8'>" & [Value] & "</text>",
+        ""
+    )
+VAR _rowLabels =
+    CONCATENATEX (
+        SUMMARIZE ( Grid, Grid[RowIdx], Grid[RowLabel] ),
+        "<text x='18' y='" & _margin + ( Grid[RowIdx] - 1 ) * _size + _size / 2 + 5
+            & "' font-family='Segoe UI,Arial' font-size='14' font-weight='600'"
+            & " text-anchor='middle' fill='%2394A3B8'>" & Grid[RowLabel] & "</text>",
+        ""
+    )
+VAR _cells =
+    CONCATENATEX (
+        Grid,
+        VAR _cell = Grid[Cell]
+        VAR _x = _margin + ( Grid[Col] - 1 ) * _size
+        VAR _y = _margin + ( Grid[RowIdx] - 1 ) * _size
+        VAR _cx = _x + _size / 2
+        VAR _cy = _y + _size / 2
+        VAR _isShot = _cell IN _shots
+        VAR _isShip = _cell IN _shipCells
+        VAR _isSunk = _cell IN _sunkCells
+        VAR _fill =
+            SWITCH (
+                TRUE (),
+                _isSunk, "%237F1D1D",
+                _isShot && _isShip, "%23DC2626",
+                _isShot, "%2338598B",
+                _victory && _isShip, "%23475569",
+                "%231E3A8A"
+            )
+        VAR _marker =
+            SWITCH (
+                TRUE (),
+                _isShot && _isShip,
+                    "<path d='M" & _cx - 9 & " " & _cy - 9 & " L" & _cx + 9 & " " & _cy + 9
+                        & " M" & _cx + 9 & " " & _cy - 9 & " L" & _cx - 9 & " " & _cy + 9
+                        & "' stroke='white' stroke-width='3.5' stroke-linecap='round'/>",
+                _isShot,
+                    "<circle cx='" & _cx & "' cy='" & _cy & "' r='5' fill='%23E2E8F0'/>",
+                ""
+            )
+        RETURN
+            "<rect x='" & _x + 2 & "' y='" & _y + 2 & "' width='" & _size - 4
+                & "' height='" & _size - 4 & "' rx='5' fill='" & _fill & "'/>" & _marker,
+        "",
+        Grid[CellOrder], ASC
+    )
+VAR _svg = _header & _colLabels & _rowLabels & _cells & "</svg>"
+RETURN
+    IF (
+        HASONEVALUE ( Ships[Game] ),
+        "data:image/svg+xml;utf8," & _svg
+    )
+
+
+// ---------------------------------------------------------------------
+// Fleet SVG : the 5 enemy ships, crossed out once sunk.
+// Data category = Image URL.
+// ---------------------------------------------------------------------
+Fleet SVG =
+VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+VAR _fleet =
+    ADDCOLUMNS (
+        SUMMARIZE ( Ships, Ships[ShipName], Ships[Size] ),
+        "@Sunk", ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) ),
+        "@Rank", RANKX ( SUMMARIZE ( Ships, Ships[ShipName], Ships[Size] ),
+                         Ships[Size] * 100 + LEN ( Ships[ShipName] ), , DESC, DENSE )
+    )
+VAR _svg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='200' viewBox='0 0 240 200'>"
+        & "<rect width='240' height='200' rx='10' fill='%230F172A'/>"
+        & CONCATENATEX (
+            _fleet,
+            VAR _y = 14 + ( [@Rank] - 1 ) * 37
+            VAR _color = IF ( [@Sunk], "%237F1D1D", "%2394A3B8" )
+            RETURN
+                "<text x='14' y='" & _y + 14 & "' font-family='Segoe UI,Arial' font-size='13' fill='"
+                    & IF ( [@Sunk], "%23F87171", "%23E2E8F0" ) & "'>" & Ships[ShipName] & "</text>"
+                    & CONCATENATEX (
+                        GENERATESERIES ( 1, Ships[Size], 1 ),
+                        "<rect x='" & 110 + ( [Value] - 1 ) * 24 & "' y='" & _y
+                            & "' width='20' height='18' rx='3' fill='" & _color & "'/>",
+                        ""
+                    )
+                    & IF (
+                        [@Sunk],
+                        "<line x1='10' y1='" & _y + 9 & "' x2='230' y2='" & _y + 9
+                            & "' stroke='%23F87171' stroke-width='2'/>"
+                    ),
+            "",
+            [@Rank], ASC
+        )
+        & "</svg>"
+RETURN
+    IF ( HASONEVALUE ( Ships[Game] ), "data:image/svg+xml;utf8," & _svg )
