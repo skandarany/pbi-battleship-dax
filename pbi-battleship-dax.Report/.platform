@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "pbi-battleship-dax"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "8c4af9a0-92bd-4a2c-96cf-ab8ad278db99"
+  }
+}
