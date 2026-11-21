@@ -9,11 +9,14 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_ProTooling = ["DevMode"]
+annotation PBI_ProTooling = ["DevMode","TMDLView_Desktop"]
+
+annotation PBI_QueryOrder = ["_Measures"]
 
 ref table Shots
 ref table Grid
 ref table Ships
+ref table _Measures
 
 ref cultureInfo en-US
 

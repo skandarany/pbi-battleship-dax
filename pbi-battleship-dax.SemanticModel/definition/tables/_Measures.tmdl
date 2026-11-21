@@ -1,0 +1,204 @@
+table _Measures
+	lineageTag: e0e7aa6b-12ba-4465-898f-518c6f35ef3b
+
+	measure 'Shots Fired' = IF ( ISFILTERED ( Shots[Cell] ), COUNTROWS ( VALUES ( Shots[Cell] ) ), 0 )
+		formatString: 0
+		displayFolder: Game
+		lineageTag: 10ccbb18-f915-48d8-8f5f-6272cd2606ed
+
+	measure Hits =
+			VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+			VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+			VAR _shipCells = VALUES ( Ships[Cell] )
+			RETURN
+			    COUNTROWS ( INTERSECT ( _shots, _shipCells ) ) + 0
+		formatString: 0
+		displayFolder: Game
+		lineageTag: e8e7fa55-4ce8-4f34-b3e2-5114558b2058
+
+	measure Misses = [Shots Fired] - [Hits]
+		formatString: 0
+		displayFolder: Game
+		lineageTag: 7b0b11fc-b3eb-4b12-9861-b6d2055fac32
+
+	measure 'Accuracy %' = DIVIDE ( [Hits], [Shots Fired] )
+		formatString: 0%
+		displayFolder: Game
+		lineageTag: 5f30ad11-890a-48dc-b445-052cd142d2b9
+
+	measure 'Ships Sunk' =
+			VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+			VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+			VAR _sunk =
+			    FILTER (
+			        VALUES ( Ships[ShipName] ),
+			        ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) )
+			    )
+			RETURN
+			    COUNTROWS ( _sunk ) + 0
+		formatString: 0
+		displayFolder: Game
+		lineageTag: afa5838e-987f-4f13-8c17-f3fe80ce90f5
+
+	measure 'Ships Remaining' = DISTINCTCOUNT ( Ships[ShipName] ) - [Ships Sunk]
+		formatString: 0
+		displayFolder: Game
+		lineageTag: b83ee8de-4d9f-437c-9ac2-a20bd1a00048
+
+	measure Score =
+			VAR _victory = [Ships Remaining] = 0 && [Shots Fired] > 0
+			VAR _bonus = IF ( _victory, MAX ( 0, 100 - [Shots Fired] ) * 20, 0 )
+			RETURN
+			    [Hits] * 100 + [Ships Sunk] * 250 - [Misses] * 10 + _bonus
+		formatString: #,0
+		displayFolder: Game
+		lineageTag: 34f1e0b9-21aa-4c54-b781-8e80b9ce2093
+
+	measure 'Game Status' =
+			SWITCH (
+			    TRUE (),
+			    NOT HASONEVALUE ( Ships[Game] ), "Pick ONE game in the Game slicer.",
+			    [Shots Fired] = 0, "Fire at will, Commander! Click cells to shoot.",
+			    [Ships Remaining] = 0,
+			        "VICTORY! Enemy fleet destroyed in " & [Shots Fired] & " shots.",
+			    [Ships Sunk] & " / 5 ships sunk  |  " & [Hits] & " hits, "
+			        & [Misses] & " misses"
+			)
+		displayFolder: Game
+		lineageTag: 10bc62d2-d6c0-4097-ba42-179a6cf5240d
+
+	measure 'Board SVG' =
+			VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+			VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+			VAR _shipCells = VALUES ( Ships[Cell] )
+			VAR _sunkShips =
+			    FILTER (
+			        VALUES ( Ships[ShipName] ),
+			        ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) )
+			    )
+			VAR _sunkCells =
+			    CALCULATETABLE ( VALUES ( Ships[Cell] ), TREATAS ( _sunkShips, Ships[ShipName] ) )
+			VAR _victory = ISEMPTY ( EXCEPT ( _shipCells, _shots ) ) && _isFiltered
+			VAR _size = 40
+			VAR _margin = 36
+			VAR _side = _margin + 10 * _size + 8
+			VAR _header =
+			    "<svg xmlns='http://www.w3.org/2000/svg' width='" & _side & "' height='" & _side
+			        & "' viewBox='0 0 " & _side & " " & _side & "'>"
+			        & "<rect width='" & _side & "' height='" & _side & "' rx='10' fill='%230F172A'/>"
+			VAR _colLabels =
+			    CONCATENATEX (
+			        GENERATESERIES ( 1, 10, 1 ),
+			        "<text x='" & _margin + ( [Value] - 1 ) * _size + _size / 2
+			            & "' y='24' font-family='Segoe UI,Arial' font-size='14' font-weight='600'"
+			            & " text-anchor='middle' fill='%2394A3B8'>" & [Value] & "</text>",
+			        ""
+			    )
+			VAR _rowLabels =
+			    CONCATENATEX (
+			        SUMMARIZE ( Grid, Grid[RowIdx], Grid[RowLabel] ),
+			        "<text x='18' y='" & _margin + ( Grid[RowIdx] - 1 ) * _size + _size / 2 + 5
+			            & "' font-family='Segoe UI,Arial' font-size='14' font-weight='600'"
+			            & " text-anchor='middle' fill='%2394A3B8'>" & Grid[RowLabel] & "</text>",
+			        ""
+			    )
+			VAR _cells =
+			    CONCATENATEX (
+			        Grid,
+			        VAR _cell = Grid[Cell]
+			        VAR _x = _margin + ( Grid[Col] - 1 ) * _size
+			        VAR _y = _margin + ( Grid[RowIdx] - 1 ) * _size
+			        VAR _cx = _x + _size / 2
+			        VAR _cy = _y + _size / 2
+			        VAR _isShot = _cell IN _shots
+			        VAR _isShip = _cell IN _shipCells
+			        VAR _isSunk = _cell IN _sunkCells
+			        VAR _fill =
+			            SWITCH (
+			                TRUE (),
+			                _isSunk, "%237F1D1D",
+			                _isShot && _isShip, "%23DC2626",
+			                _isShot, "%2338598B",
+			                _victory && _isShip, "%23475569",
+			                "%231E3A8A"
+			            )
+			        VAR _marker =
+			            SWITCH (
+			                TRUE (),
+			                _isShot && _isShip,
+			                    "<path d='M" & _cx - 9 & " " & _cy - 9 & " L" & _cx + 9 & " " & _cy + 9
+			                        & " M" & _cx + 9 & " " & _cy - 9 & " L" & _cx - 9 & " " & _cy + 9
+			                        & "' stroke='white' stroke-width='3.5' stroke-linecap='round'/>",
+			                _isShot,
+			                    "<circle cx='" & _cx & "' cy='" & _cy & "' r='5' fill='%23E2E8F0'/>",
+			                ""
+			            )
+			        RETURN
+			            "<rect x='" & _x + 2 & "' y='" & _y + 2 & "' width='" & _size - 4
+			                & "' height='" & _size - 4 & "' rx='5' fill='" & _fill & "'/>" & _marker,
+			        "",
+			        Grid[CellOrder], ASC
+			    )
+			VAR _svg = _header & _colLabels & _rowLabels & _cells & "</svg>"
+			RETURN
+			    IF (
+			        HASONEVALUE ( Ships[Game] ),
+			        "data:image/svg+xml;utf8," & _svg
+			    )
+		displayFolder: Visuals
+		lineageTag: 46ba4b59-a559-4c65-a28d-bea728ecd2c2
+		dataCategory: ImageUrl
+
+	measure 'Fleet SVG' =
+			VAR _isFiltered = ISFILTERED ( Shots[Cell] )
+			VAR _shots = FILTER ( VALUES ( Shots[Cell] ), _isFiltered )
+			VAR _fleet =
+			    ADDCOLUMNS (
+			        SUMMARIZE ( Ships, Ships[ShipName], Ships[Size] ),
+			        "@Sunk", ISEMPTY ( EXCEPT ( CALCULATETABLE ( VALUES ( Ships[Cell] ) ), _shots ) ),
+			        "@Rank", RANKX ( SUMMARIZE ( Ships, Ships[ShipName], Ships[Size] ),
+			                         Ships[Size] * 100 + LEN ( Ships[ShipName] ), , DESC, DENSE )
+			    )
+			VAR _svg =
+			    "<svg xmlns='http://www.w3.org/2000/svg' width='240' height='200' viewBox='0 0 240 200'>"
+			        & "<rect width='240' height='200' rx='10' fill='%230F172A'/>"
+			        & CONCATENATEX (
+			            _fleet,
+			            VAR _y = 14 + ( [@Rank] - 1 ) * 37
+			            VAR _color = IF ( [@Sunk], "%237F1D1D", "%2394A3B8" )
+			            RETURN
+			                "<text x='14' y='" & _y + 14 & "' font-family='Segoe UI,Arial' font-size='13' fill='"
+			                    & IF ( [@Sunk], "%23F87171", "%23E2E8F0" ) & "'>" & Ships[ShipName] & "</text>"
+			                    & CONCATENATEX (
+			                        GENERATESERIES ( 1, Ships[Size], 1 ),
+			                        "<rect x='" & 110 + ( [Value] - 1 ) * 24 & "' y='" & _y
+			                            & "' width='20' height='18' rx='3' fill='" & _color & "'/>",
+			                        ""
+			                    )
+			                    & IF (
+			                        [@Sunk],
+			                        "<line x1='10' y1='" & _y + 9 & "' x2='230' y2='" & _y + 9
+			                            & "' stroke='%23F87171' stroke-width='2'/>"
+			                    ),
+			            "",
+			            [@Rank], ASC
+			        )
+			        & "</svg>"
+			RETURN
+			    IF ( HASONEVALUE ( Ships[Game] ), "data:image/svg+xml;utf8," & _svg )
+		displayFolder: Visuals
+		lineageTag: 964ae4ef-e37c-423d-907e-c00ec7bf8366
+		dataCategory: ImageUrl
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column1"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_ResultType = Table
+
