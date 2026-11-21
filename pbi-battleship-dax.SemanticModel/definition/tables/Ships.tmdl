@@ -1,0 +1,102 @@
+table Ships
+	lineageTag: eefb7af3-202a-4649-b03f-e55f2b75bb1a
+
+	column Game
+		lineageTag: dce51682-47f7-4ad8-8382-f52010310d43
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Game]
+
+		annotation SummarizationSetBy = Automatic
+
+	column ShipName
+		lineageTag: 954c3b3f-a46c-4440-9d29-42e404187c06
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [ShipName]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Size
+		formatString: 0
+		lineageTag: 21952575-7502-4c45-8dc5-801b52856674
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Size]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Cell
+		lineageTag: 1ca820a6-8560-44a1-9640-2a9be549d0b6
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Cell]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Ships = calculated
+		mode: import
+		source =
+				
+				DATATABLE (
+				    "Game", STRING,
+				    "ShipName", STRING,
+				    "Size", INTEGER,
+				    "Cell", STRING,
+				    {
+				        { "Game 1", "Carrier", 5, "D8" },
+				        { "Game 1", "Carrier", 5, "E8" },
+				        { "Game 1", "Carrier", 5, "F8" },
+				        { "Game 1", "Carrier", 5, "G8" },
+				        { "Game 1", "Carrier", 5, "H8" },
+				        { "Game 1", "Battleship", 4, "G5" },
+				        { "Game 1", "Battleship", 4, "H5" },
+				        { "Game 1", "Battleship", 4, "I5" },
+				        { "Game 1", "Battleship", 4, "J5" },
+				        { "Game 1", "Cruiser", 3, "C1" },
+				        { "Game 1", "Cruiser", 3, "D1" },
+				        { "Game 1", "Cruiser", 3, "E1" },
+				        { "Game 1", "Submarine", 3, "A10" },
+				        { "Game 1", "Submarine", 3, "B10" },
+				        { "Game 1", "Submarine", 3, "C10" },
+				        { "Game 1", "Destroyer", 2, "C4" },
+				        { "Game 1", "Destroyer", 2, "C5" },
+				        { "Game 2", "Carrier", 5, "C6" },
+				        { "Game 2", "Carrier", 5, "D6" },
+				        { "Game 2", "Carrier", 5, "E6" },
+				        { "Game 2", "Carrier", 5, "F6" },
+				        { "Game 2", "Carrier", 5, "G6" },
+				        { "Game 2", "Battleship", 4, "I6" },
+				        { "Game 2", "Battleship", 4, "I7" },
+				        { "Game 2", "Battleship", 4, "I8" },
+				        { "Game 2", "Battleship", 4, "I9" },
+				        { "Game 2", "Cruiser", 3, "A4" },
+				        { "Game 2", "Cruiser", 3, "A5" },
+				        { "Game 2", "Cruiser", 3, "A6" },
+				        { "Game 2", "Submarine", 3, "I1" },
+				        { "Game 2", "Submarine", 3, "I2" },
+				        { "Game 2", "Submarine", 3, "I3" },
+				        { "Game 2", "Destroyer", 2, "D3" },
+				        { "Game 2", "Destroyer", 2, "D4" },
+				        { "Game 3", "Carrier", 5, "E3" },
+				        { "Game 3", "Carrier", 5, "F3" },
+				        { "Game 3", "Carrier", 5, "G3" },
+				        { "Game 3", "Carrier", 5, "H3" },
+				        { "Game 3", "Carrier", 5, "I3" },
+				        { "Game 3", "Battleship", 4, "C2" },
+				        { "Game 3", "Battleship", 4, "C3" },
+				        { "Game 3", "Battleship", 4, "C4" },
+				        { "Game 3", "Battleship", 4, "C5" },
+				        { "Game 3", "Cruiser", 3, "E1" },
+				        { "Game 3", "Cruiser", 3, "F1" },
+				        { "Game 3", "Cruiser", 3, "G1" },
+				        { "Game 3", "Submarine", 3, "H8" },
+				        { "Game 3", "Submarine", 3, "I8" },
+				        { "Game 3", "Submarine", 3, "J8" },
+				        { "Game 3", "Destroyer", 2, "E10" },
+				        { "Game 3", "Destroyer", 2, "F10" }
+				    }
+				)
+
+	annotation PBI_Id = bc3299df9b434ed994598e58e5b04d16
+

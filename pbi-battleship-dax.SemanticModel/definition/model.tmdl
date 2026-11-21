@@ -11,5 +11,9 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["DevMode"]
 
+ref table Shots
+ref table Grid
+ref table Ships
+
 ref cultureInfo en-US
 

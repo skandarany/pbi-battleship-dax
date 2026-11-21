@@ -1,0 +1,38 @@
+table Shots
+	lineageTag: 895117e1-56ba-4dc3-a6b9-c82c2c27fd94
+
+	column Cell
+		lineageTag: da299703-df6f-4894-b181-cdd5842d1d04
+		isNameInferred
+		sourceColumn: [Cell]
+		sortByColumn: CellOrder
+
+	column CellOrder
+		lineageTag: 7b16c6c7-dd77-4a6c-8a13-1f4d8e002c6a
+		isNameInferred
+		sourceColumn: [CellOrder]
+
+	column RowLabel
+		lineageTag: 0ef42789-c5b4-43d4-af33-74cd01c7d191
+		isNameInferred
+		sourceColumn: [RowLabel]
+
+	column Col
+		lineageTag: 640ae9c2-7312-4fe9-9b4e-9d98e13d4c4c
+		isNameInferred
+		sourceColumn: [Col]
+
+	partition Shots = calculated
+		mode: import
+		source =
+				
+				SELECTCOLUMNS (
+				    Grid,
+				    "Cell", Grid[Cell],
+				    "CellOrder", Grid[Col] * 100 + Grid[RowIdx],
+				    "RowLabel", Grid[RowLabel],
+				    "Col", Grid[Col]
+				)
+
+	annotation PBI_Id = e7dd9bbf54c543c99ce4a5c12f39058d
+

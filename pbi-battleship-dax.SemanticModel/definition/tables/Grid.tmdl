@@ -1,0 +1,71 @@
+table Grid
+	lineageTag: 48f69405-ff03-4597-a14a-5f0f7528c8a4
+
+	column RowIdx
+		formatString: 0
+		lineageTag: 4be8f567-732b-4b72-b2c7-810112c9a185
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [RowIdx]
+
+		annotation SummarizationSetBy = Automatic
+
+	column RowLabel
+		lineageTag: 4a4a6482-bfff-4a7d-8f58-b69ccee990d3
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [RowLabel]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Col
+		formatString: 0
+		lineageTag: 5cf2d440-ec44-4097-9daa-5257c5e5497f
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Col]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Cell
+		lineageTag: fe0a23fc-7b66-4ae9-9cd9-4571dd23b1fa
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Cell]
+		sortByColumn: CellOrder
+
+		annotation SummarizationSetBy = Automatic
+
+	column CellOrder
+		formatString: 0
+		lineageTag: c687d6e9-92c9-4e08-bf7a-ec469b8b938e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [CellOrder]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Grid = calculated
+		mode: import
+		source =
+				
+				VAR _rows =
+				    DATATABLE (
+				        "RowIdx", INTEGER,
+				        "RowLabel", STRING,
+				        {
+				            { 1, "A" }, { 2, "B" }, { 3, "C" }, { 4, "D" }, { 5, "E" },
+				            { 6, "F" }, { 7, "G" }, { 8, "H" }, { 9, "I" }, { 10, "J" }
+				        }
+				    )
+				VAR _cols =
+				    SELECTCOLUMNS ( GENERATESERIES ( 1, 10, 1 ), "Col", [Value] )
+				RETURN
+				    ADDCOLUMNS (
+				        CROSSJOIN ( _rows, _cols ),
+				        "Cell", [RowLabel] & [Col],
+				        "CellOrder", [RowIdx] * 100 + [Col]
+				    )
+
+	annotation PBI_Id = c35fc951cc784d45bd35614ba8a8c3b2
+
