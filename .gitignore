@@ -1,0 +1,11 @@
+﻿# Power BI local files (never commit)
+**/.pbi/localSettings.json
+**/.pbi/cache.abf
+
+# Binary Power BI files: this repo uses PBIP
+*.pbix
+
+# OS files
+Thumbs.db
+desktop.ini
+.DS_Store
