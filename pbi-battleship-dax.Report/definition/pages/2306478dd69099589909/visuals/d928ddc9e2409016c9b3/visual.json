@@ -1,0 +1,93 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "d928ddc9e2409016c9b3",
+  "position": {
+    "x": 24.18323579974647,
+    "y": 637.29939048743643,
+    "z": 9000,
+    "height": 81.084967093267579,
+    "width": 1180.710924340563,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "How to play",
+                    "textStyle": {
+                      "fontWeight": "bold",
+                      "fontSize": "14pt"
+                    }
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "1. Pick a game   2. Click cells to shoot   3. Sink the 5 ships in as few shots as possible   4. Eraser = new game"
+                  }
+                ]
+              },
+              {
+                "textRuns": [
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#1e3a8a"
+                    }
+                  },
+                  {
+                    "value": " Water   "
+                  },
+                  {
+                    "value": "  ■",
+                    "textStyle": {
+                      "color": "#38598b"
+                    }
+                  },
+                  {
+                    "value": " Miss     "
+                  },
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#dc2626"
+                    }
+                  },
+                  {
+                    "value": " Hit     "
+                  },
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#7f1d1d"
+                    }
+                  },
+                  {
+                    "value": " Sunk     "
+                  },
+                  {
+                    "value": "■",
+                    "textStyle": {
+                      "color": "#475569"
+                    }
+                  },
+                  {
+                    "value": " Revealed"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
